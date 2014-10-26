@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name L_Fastron_PISR)(type Legacy)(uri ${KIPRJMOD}/L_Fastron_PISR.mod)(options "")(descr ""))
+  (lib (name Resonator_CSTCE_V)(type Legacy)(uri ${KIPRJMOD}/Resonator_CSTCE_V.mod)(options "")(descr ""))
+)
