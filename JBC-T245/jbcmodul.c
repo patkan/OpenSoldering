@@ -3,7 +3,7 @@
  *     Version: 0.0.1
  * Description: Ansteuerung eines JBC T245A Lötkolbens
  *     License: GPLv3 or later
- *     Depends: global.h, io.h, interrupt.h, uart, i2c
+ *     Depends: global.h, io.h, interrupt.h, sb9, i2c
  *
  *      Author: Copyright (C) Philipp Hörauf
  *        Date: 2014-12-19
@@ -24,67 +24,9 @@
  *
  */
 
-#include "../../AtmelLib/global.h"
-#include "../../AtmelLib/io/io.h"
-#include <avr/interrupt.h>
+#include "definitionen.h"
+#include "periph.c"
 
-
-#define LATCH(x) out(PORTB, PB2,0,x)
-
-void spiInit (void) {
-	DDRB |= 1<<PB2 | 1<<PB3 | 1<<PB5;
-	SPCR = 1<<SPE | 1<<MSTR; // SPI Master Mode, clock vollgas
-	SPSR = 0;
-}
-
-
-// Anordnung der Segmente: DP, C, B, A, G, F, E, D
-#define A (1<<4)
-#define B (1<<5)
-#define C (1<<6)
-#define D (1<<0)
-#define E (1<<1)
-#define F (1<<2)
-#define G (1<<3)
-#define DP (1<<7)
-
-uint8_t segEncode(uint8_t ziffer) {
-	// einfach eine große Switch-case Kaskade
-	switch (ziffer) {
-		case 0: // ABCDEF
-		return ~(A | B | C | D | E | F);
-		break;
-		case 1: // FE
-		return ~(B | C);
-		break;
-		case 2: // ABGED
-		return ~(A | B | G | E | D);
-		break;
-		case 3: // ABGCD
-		return ~(A | B | G | C | D);
-		break;
-		case 4: // FGBC
-		return ~(F | G | B | C);
-		break;
-		case 5: // AFGCD
-		return ~(A | F | G | C | D);
-		break;
-		case 6: // ACDEFG
-		return ~(A | C | D | E | F | G);
-		break;
-		case 7: // ABC
-		return ~(A | B | C);
-		break;
-		case 8: // ABCDEFG
-		return ~(A | B | C | D | E | F | G);
-		break;
-		case 9: // GFABCD
-		return ~(G | F | A | B | C | D);
-		break;
-		default:
-		return 0xFF;
-	}
-}
 
 void writeSegments (uint16_t zahl) {
 	// Setze die 7-segment-Displays der Lötstation
