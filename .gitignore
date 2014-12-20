@@ -6,6 +6,7 @@
 *.bak
 *.pdf
 *.kicad_pcb-bak
+*gerber/
 
 # Atmel-Kompilat:
 .dep/
