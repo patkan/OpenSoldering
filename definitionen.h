@@ -5,10 +5,14 @@
 
 
 // Allgemeiner Teil
-#include "../../AtmelLib/global.h"
-#include "../../AtmelLib/io/io.h"
+#include "../AtmelLib/global.h"
+#include "../AtmelLib/io/io.h"
 #include <avr/interrupt.h>
 
+// Einstellung, welcher Lötkolben gerade angeschlossen ist
+#define JBC
+// #define WELLER_WXMP
+// #define WELLER_LEGACY
 
 #define LATCH(x) out(PORTB, PB2,0,x)
 

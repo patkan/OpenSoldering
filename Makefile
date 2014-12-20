@@ -49,7 +49,7 @@ F_CPU = 16000000
 FORMAT = ihex
 
 # Target file name (without extension).
-TARGET = jbcmodul
+TARGET = loetkolbenmodul
 
 
 # List C source files here. (C dependencies are automatically generated.)
