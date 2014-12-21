@@ -33,7 +33,6 @@ void i2cStart (void) {
 	if ((TWSR & 0xF8) != TW_START) {
 		i2cError();
 	}
-	TWSR = 1;
 }
 
 inline void i2cRestart (void) {
@@ -43,7 +42,6 @@ inline void i2cRestart (void) {
 void i2cStop (void) {
 	// Stop Condition
 	TWCR = 1<<TWINT | 1<<TWEN | 1<<TWSTO;
-// 	i2cDelay ();
 }
 
 void i2cAdrTransmit (uint8_t daten) {
@@ -53,7 +51,6 @@ void i2cAdrTransmit (uint8_t daten) {
 	if ((TWSR & 0xF8) != TW_MT_SLA_ACK) {
 		i2cError();
 	}
-	TWSR = 1;
 }
 
 void i2cDataTransmit (uint8_t daten) {
@@ -63,7 +60,6 @@ void i2cDataTransmit (uint8_t daten) {
 	if ((TWSR & 0xF8) != TW_MT_DATA_ACK) {
 		i2cError();
 	}
-	TWSR = 1;
 }
 
 uint8_t i2cReceive (void) {
@@ -75,7 +71,7 @@ uint8_t i2cReceive (void) {
 void i2cTxByte (uint8_t adresse, uint8_t pointerwert, uint8_t daten) {
 	i2cStart ();
 	// adresse + writeEN-Bit
-	i2cAdrTransmit ((adresse<<1) | 1);
+	i2cAdrTransmit (adresse<<1);
 	// RAM-Adresse für Zieldaten senden
 	i2cDataTransmit (pointerwert);
 	// Daten senden
@@ -89,20 +85,19 @@ void lm75Init (void) {
 
 void i2cRxLm75Start (uint8_t adresse) {
 	i2cStart ();
-	i2cAdrTransmit ((adresse<<1) | 1);
+	i2cAdrTransmit (adresse<<1);
 	i2cDataTransmit (0); // selektiere Datenregister
 	i2cStop ();
 }
 
-// hier 0b1001000 dauerhaft
 uint16_t i2cRxLm75 (uint8_t adresse) {
 	// lesen geht folgendermaßen:
-	// Pointer setzen (write mode)
-	// restart senden
-	// Register auslesen
+	// start
+	// adresse + readbit senden
+	// Register auslesen (16 bit)
 	uint16_t temp = 0;
 	i2cStart ();
-	i2cAdrTransmit (adresse<<1);
+	i2cAdrTransmit ((adresse<<1) | 1); // Read == 1. Bit gesetzt
 	temp  = ((uint16_t)i2cReceive ()<<4); // obere 8 Bit
 	temp |= (i2cReceive ()>>4); // untere 4 Bit
 	// bei 12bit entspricht 1 LSB 1/16°C

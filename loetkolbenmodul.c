@@ -67,13 +67,12 @@ int main(void) {
 // 	sei(); // und es seien Interrupts :D
 	
 	uint16_t temp = 0;
-	uint8_t i = 0;
+	
+	delayus(10);
+	i2cRxLm75Start(0b1001000);
 	
 	while(1) {
-		i2cRxLm75Start(0b1001000);
-		delayus(10);
-// 		temp = i2cRxLm75 (0b1001000);
-		
+		temp = i2cRxLm75 (0b1001000);
 		writeSegments (i2cERR & 0xFC);
 		delayms(500);
 	}
