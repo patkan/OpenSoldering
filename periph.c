@@ -23,7 +23,7 @@ uint8_t i2cError (void) {
 }
 
 void i2cDelay (void) {
-	while (!(TWCR & (1<<TWINT))); // Warte, dass START gesendet wurde
+	while (!(TWCR & (1<<TWINT))); // Warte, dass sich das TWINT-Bit setzt
 }
 
 void i2cStart (void) {
@@ -64,6 +64,8 @@ void i2cDataTransmit (uint8_t daten) {
 
 uint8_t i2cReceive (void) {
 	i2cDelay ();
+	TWCR = 1<<TWINT | 1<<TWEN;
+	i2cDelay ();
 	uint8_t temp = TWDR;
 	return temp;
 }
@@ -80,7 +82,7 @@ void i2cTxByte (uint8_t adresse, uint8_t pointerwert, uint8_t daten) {
 }
 
 void lm75Init (void) {
-	i2cTxByte (0b1001000, 1, 0b01100000);
+	i2cTxByte (0b1001000, 1, 0b01111000);
 }
 
 void i2cRxLm75Start (uint8_t adresse) {
