@@ -63,7 +63,6 @@ int main(void) {
 	led[0].b=75;
 	led[0].b=25;
 	ws2812_setleds(led,1);
-	i2cRxLm75Start(0b01001000);
 	
 // 	sei(); // und es seien Interrupts :D
 	
@@ -71,9 +70,11 @@ int main(void) {
 	uint8_t i = 0;
 	
 	while(1) {
-		temp = i2cRxLm75 (0b01001000);
+		i2cRxLm75Start(0b1001000);
+		delayus(10);
+// 		temp = i2cRxLm75 (0b1001000);
 		
-		writeSegments (temp/16);
+		writeSegments (i2cERR & 0xFC);
 		delayms(500);
 	}
 	return 0;

@@ -16,8 +16,10 @@ void i2cInit (void) {
 	TWSR = 1<<TWPS0; // prescaler = 4
 }
 
+uint8_t i2cERR = 0;
 uint8_t i2cError (void) {
-	return TWSR;
+	i2cERR = TWSR;
+	TWSR = 1<<TWPS0; // lösche alles außer der ersten beiden Bits
 }
 
 void i2cDelay (void) {
@@ -31,6 +33,7 @@ void i2cStart (void) {
 	if ((TWSR & 0xF8) != TW_START) {
 		i2cError();
 	}
+	TWSR = 1;
 }
 
 inline void i2cRestart (void) {
@@ -50,6 +53,7 @@ void i2cAdrTransmit (uint8_t daten) {
 	if ((TWSR & 0xF8) != TW_MT_SLA_ACK) {
 		i2cError();
 	}
+	TWSR = 1;
 }
 
 void i2cDataTransmit (uint8_t daten) {
@@ -59,6 +63,7 @@ void i2cDataTransmit (uint8_t daten) {
 	if ((TWSR & 0xF8) != TW_MT_DATA_ACK) {
 		i2cError();
 	}
+	TWSR = 1;
 }
 
 uint8_t i2cReceive (void) {
@@ -68,10 +73,9 @@ uint8_t i2cReceive (void) {
 }
 
 void i2cTxByte (uint8_t adresse, uint8_t pointerwert, uint8_t daten) {
-	// TODO: Statusbits überprüfen und Errorbehandlung schreiben
 	i2cStart ();
 	// adresse + writeEN-Bit
-	i2cAdrTransmit ((adresse<<1) + 1);
+	i2cAdrTransmit ((adresse<<1) | 1);
 	// RAM-Adresse für Zieldaten senden
 	i2cDataTransmit (pointerwert);
 	// Daten senden
@@ -80,12 +84,12 @@ void i2cTxByte (uint8_t adresse, uint8_t pointerwert, uint8_t daten) {
 }
 
 void lm75Init (void) {
-	i2cTxByte (0b01001000, 1, 0b01100000);
+	i2cTxByte (0b1001000, 1, 0b01100000);
 }
 
 void i2cRxLm75Start (uint8_t adresse) {
 	i2cStart ();
-	i2cAdrTransmit ((adresse<<1) + 1);
+	i2cAdrTransmit ((adresse<<1) | 1);
 	i2cDataTransmit (0); // selektiere Datenregister
 	i2cStop ();
 }
