@@ -45,8 +45,8 @@ int main(void) {
 	
 	// Allgemeine PIN- und PORT-Einstellungen
 	DDRB = 1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3 | 1<<PB5;
-	DDRD = 1<<PD1 | 1<<PD4 | 1<<PD5; // WS2812B Datenpin
-	PORTC = 1<<PC3; // Pullup für Lötkolbenständerschalter
+	DDRD = 1<<PD1 | 1<<PD4 | 1<<PD5; // PD4 ist WS2812B Datenpin
+	PORTC = 1<<PC3 | 1<<PC4 | 1<<PC5; // Pullup für Lötkolbenständerschalter
 	PORTD = 1<<PD3; // Lötspitzenwechslerschalter
 	
 	delayms(100);
@@ -61,10 +61,13 @@ int main(void) {
 // 	sei(); // und es seien Interrupts :D
 	
 	uint16_t temp = 0;
+	uint8_t i = 0;
 	
 	while(1) {
+// 		lm75Init();
 		temp = i2cRxLm75 (0b1001000);
-		writeSegments (temp/16);
+		
+		writeSegments (i++);
 		delayms(500);
 	}
 	return 0;

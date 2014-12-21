@@ -81,10 +81,13 @@ uint16_t i2cRxLm75 (uint8_t adresse) {
 	i2cStart ();
 	i2cTransmit (adresse | 1<<7);
 	i2cTransmit (0); // selektiere Datenregister
-	i2cStart (); // i2c restart
+	i2cStop ();
+	delayus(5);
+	i2cStart ();
 	i2cTransmit (adresse);
 	temp  = i2cReceive () << 4; 
 	temp |= i2cReceive () >> 4;
 	// bei 12bit entspricht 1 LSB 1/16°C
+	i2cStop ();
 	return temp;
 }
