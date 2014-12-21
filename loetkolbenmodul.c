@@ -1,6 +1,6 @@
 /*
  *    Filename: jbcmodul.c
- *     Version: 0.0.1
+ *     Version: 0.0.3
  * Description: Ansteuerung eines JBC T245A Lötkolbens
  *     License: GPLv3 or later
  *     Depends: global.h, io.h, interrupt.h, sb9, i2c
@@ -25,7 +25,6 @@
  */
 
 #include "definitionen.h"
-#include "periph.c"
 
 
 void writeSegments (uint16_t zahl) {
@@ -46,7 +45,7 @@ int main(void) {
 	// Allgemeine PIN- und PORT-Einstellungen
 	DDRB = 1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3 | 1<<PB5;
 	DDRD = 1<<PD1 | 1<<PD4 | 1<<PD5; // PD4 ist WS2812B Datenpin
-	PORTC = 1<<PC3 | 1<<PC4 | 1<<PC5; // Pullup für Lötkolbenständerschalter
+	PORTC = 1<<PC3; // Pullup für Lötkolbenständerschalter
 	PORTD = 1<<PD3; // Lötspitzenwechslerschalter
 	
 	delayms(100);
@@ -58,16 +57,23 @@ int main(void) {
 // 	uartInit();
 	writeSegments(42);
 	
+	// Initialiserung der WS2812-StatusLED
+	struct cRGB led[1];
+	led[0].g=128;
+	led[0].b=75;
+	led[0].b=25;
+	ws2812_setleds(led,1);
+	i2cRxLm75Start(0b01001000);
+	
 // 	sei(); // und es seien Interrupts :D
 	
 	uint16_t temp = 0;
 	uint8_t i = 0;
 	
 	while(1) {
-// 		lm75Init();
-		temp = i2cRxLm75 (0b1001000);
+		temp = i2cRxLm75 (0b01001000);
 		
-		writeSegments (i++);
+		writeSegments (temp/16);
 		delayms(500);
 	}
 	return 0;

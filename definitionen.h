@@ -8,6 +8,10 @@
 #include "../AtmelLib/global.h"
 #include "../AtmelLib/io/io.h"
 #include <avr/interrupt.h>
+#include <util/twi.h>
+
+#include "periph.c"
+#include "light_ws2812/light_ws2812.c"
 
 // Einstellung, welcher Lötkolben gerade angeschlossen ist
 #define JBC
