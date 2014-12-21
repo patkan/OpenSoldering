@@ -1,0 +1,8 @@
+KNOWN ERRORS der Platinenversion 0.1:
+
+Resonator-Pinbelegung falsch, Resonator muss um einen Pin verschoben
+anschlossen werden und dann muss der oben auf dem Lötstopplack liegende Pin
+mit einem Stück Kabel an den Atmel gelötet werden
+
+SDA und SCL vertauscht, zur Reparatur die beiden Leitungen mit Draht direkt
+an den LM75 anlöten.

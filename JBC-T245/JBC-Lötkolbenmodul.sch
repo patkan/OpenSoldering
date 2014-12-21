@@ -370,9 +370,9 @@ F 3 "" H 4200 2600 60  0000 C CNN
 	1    4200 2600
 	0    -1   -1   0   
 $EndComp
-Text Label 5700 4250 2    60   ~ 0
-sda
 Text Label 5700 4150 2    60   ~ 0
+sda
+Text Label 5700 4250 2    60   ~ 0
 scl
 Text Label 5700 5000 2    60   ~ 0
 led_1-

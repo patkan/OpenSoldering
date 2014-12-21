@@ -42,25 +42,30 @@ void writeSegments (uint16_t zahl) {
 }
 
 int main(void) {
-	delayms(100);
 	
+	// Allgemeine PIN- und PORT-Einstellungen
 	DDRB = 1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3 | 1<<PB5;
 	DDRD = 1<<PD1 | 1<<PD4 | 1<<PD5; // WS2812B Datenpin
-	PORTC = 1<<PC4; // Pullup für Lötkolbenständerschalter
+	PORTC = 1<<PC3; // Pullup für Lötkolbenständerschalter
 	PORTD = 1<<PD3; // Lötspitzenwechslerschalter
 	
+	delayms(100);
+	
 	spiInit();
-// 	lm75Init();
+	i2cInit();
+	lm75Init();
 // 	timerInit();
 // 	uartInit();
+	writeSegments(42);
 	
 // 	sei(); // und es seien Interrupts :D
 	
+	uint16_t temp = 0;
+	
 	while(1) {
-		for (uint16_t i=0; i<1000; i++) {
-			writeSegments(i);
-			delayms(100);
-		}
+		temp = i2cRxLm75 (0b1001000);
+		writeSegments (temp/16);
+		delayms(500);
 	}
 	return 0;
 }
