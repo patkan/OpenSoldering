@@ -2,6 +2,9 @@
 // Peripheriekomponenten wie SPI, I2C, SB9, ...
 
 
+//******************************************************
+//	INIT Funktionen für Peripheriekomponenten
+//******************************************************
 
 void spiInit (void) {
 	DDRB |= 1<<PB2 | 1<<PB3 | 1<<PB5;
@@ -16,10 +19,30 @@ void i2cInit (void) {
 	TWSR = 1<<TWPS0; // prescaler = 4
 }
 
+void adcInit(void) {
+	ADMUX = 0; // Referenz auf externe Referenz
+	ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIE | 5<<ADPS0; // ADC an, Interrupt an, Prescaler=128
+}
+
+void timerInit(void) {
+	// Timer/Counter1 im CTC modus verwenden. alle 10ms ein Interrupt
+	TCCR1A = 0; // CTC (mode 4)
+	TCCR1B = 1<<WGM12 | 1<<CS11 | 1<<CS10; // CTC (mode 4), Prescaler = 64 -> 4µs pro Timerschritt
+	TIMSK = 1<<OCIE1A; // Interrupt on compare match
+	OCR1A  = 2500; // TOP und Interrupt alle 10ms bei 16MHz clockspeed
+}
+
+
+
+//******************************************************
+//	Systemfunktionen und HAL
+//******************************************************
+
 uint8_t i2cERR = 0;
 uint8_t i2cError (void) {
 	i2cERR = TWSR;
 	TWSR = 1<<TWPS0; // lösche alles außer der ersten beiden Bits
+	return i2cERR;
 }
 
 void i2cDelay (void) {
@@ -105,4 +128,21 @@ uint16_t i2cRxLm75 (uint8_t adresse) {
 	// bei 12bit entspricht 1 LSB 1/16°C
 	i2cStop ();
 	return temp;
+}
+
+void writeSegments (uint16_t zahl) {
+	// Setze die 7-segment-Displays der Lötstation
+	SPDR = segEncode(zahl/100); // Zahl darf nicht über 999 sein
+	while (!(SPSR & 1<<SPIF));
+	SPDR = segEncode((zahl%100)/10);
+	while (!(SPSR & 1<<SPIF));
+	SPDR = segEncode(zahl%10);
+	while (!(SPSR & 1<<SPIF));
+	LATCH(1);
+	delayus(1);
+	LATCH(0);
+}
+
+void adcStart(void) {
+	ADCSRA |= 1<<ADSC;
 }

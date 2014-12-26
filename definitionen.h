@@ -9,6 +9,7 @@
 #include "../AtmelLib/io/io.h"
 #include <avr/interrupt.h>
 #include <util/twi.h>
+#include <avr/pgmspace.h>
 
 #include "periph.c"
 #include "light_ws2812/light_ws2812.c"
