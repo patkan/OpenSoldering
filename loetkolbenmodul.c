@@ -27,15 +27,36 @@
 #include "definitionen.h"
 
 
+void setKolbenPower (void) {
+	// 16bit Timer1 auf FastPWM, Ausgang OC1A sei Lötkolben.
+}
+
 // Der ADC wird interruptgesteuert
-volatile uint8_t counter = 0;
-// nötig für Berechnung der Heizleistung und Temperatur des Lötkolbens
-volatile float leistung = 0;
-volatile uint16_t spitzentemp=0, heizstrom=0, eingangsspannung=0; // U in mV, I in mA
+volatile uint8_t counter = 0; // für Berechnung von Heizleistung und Temperatur des Lötkolbens
+volatile float leistung = 0; // Lötkolbenleistung aktuell
+volatile uint16_t spitzentemp = 0, heizstrom = 0, eingangsspannung = 0; // U in mV, I in mA
+volatile uint16_t solltemperatur = 0;
+
+// PD-Reglerparameter (durch Software veränderlich!!)
+volatile float t0 = 1, tn = 1, kp = 1;
+
 ISR (TIMER1_COMPA_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
 	ADCSRA |= 1<<ADSC; // start conversion
+	
+	// PID Regler muss auch hier drin arbeiten, da er mit gleichem Zeitabstand
+	// ausgeführt wird, wie der ADC. bzw. mit 1/3 der ADC Frequenz.
+	static float  k1 = 0, uk = 0, uk1 = 0; // letzter Reglerausgangswert
+	uint16_t k = spitzentemp;
+	
+	// Regler (Konzept: PD)
+	uk = kp * (k + (t0 / tn -1) + uk1;
+	uk1 = uk;
+	k1 = k;
+	
+	// Weitergabe an Ausgabefunktion:
+	setKolbenPower (uk);
 }
 
 // ADC Conversion complete Interrupt
@@ -89,18 +110,6 @@ ISR (ADC_vect, ISR_BLOCK) {
 }
 
 
-void writeSegments (uint16_t zahl) {
-	// Setze die 7-segment-Displays der Lötstation
-	SPDR = segEncode(zahl/100); // Zahl darf nicht über 999 sein
-	while (!(SPSR & 1<<SPIF));
-	SPDR = segEncode((zahl%100)/10);
-	while (!(SPSR & 1<<SPIF));
-	SPDR = segEncode(zahl%10);
-	while (!(SPSR & 1<<SPIF));
-	LATCH(1);
-	delayus(1);
-	LATCH(0);
-}
 
 int main(void) {
 	

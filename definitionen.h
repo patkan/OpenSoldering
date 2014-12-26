@@ -69,3 +69,16 @@ uint8_t segEncode(uint8_t ziffer) {
 			return 0xFF;
 	}
 }
+
+void writeSegments (uint16_t zahl) {
+	// Setze die 7-segment-Displays der Lötstation
+	SPDR = segEncode(zahl/100); // Zahl darf nicht über 999 sein
+	while (!(SPSR & 1<<SPIF));
+	SPDR = segEncode((zahl%100)/10);
+	while (!(SPSR & 1<<SPIF));
+	SPDR = segEncode(zahl%10);
+	while (!(SPSR & 1<<SPIF));
+	LATCH(1);
+	delayus(1);
+	LATCH(0);
+}
