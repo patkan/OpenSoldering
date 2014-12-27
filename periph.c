@@ -20,6 +20,8 @@ void i2cInit (void) {
 }
 
 void adcInit(void) {
+	// Der ADC läuft mit 16e6 / 128 = 125kHz
+	// bei 13 Zyklen pro Wandlung sind das 9,615ksps 
 	ADMUX = 0; // Referenz auf externe Referenz
 	ADCSRA = 1<<ADEN | 1<<ADSC | 1<<ADIE | 5<<ADPS0; // ADC an, Interrupt an, Prescaler=128
 }
@@ -27,13 +29,13 @@ void adcInit(void) {
 void timerInit(void) {
 	// Timer/Counter0 kann nur Overflow-Interrupt. daher Prescaler auf 256
 	// heißt: alle 4,08ms kommt ein Interrupt rein.
-	TCCR0 = 1<<CS02; // scale = 256
+	TCCR0 = 1<<CS02; // Prescaler = 256
 	TIMSK |= 1<<TOIE0; // Overflow Interrupt aktiv
 	
-	// Timer/Counter1 im PhaseCorrectPWM Modus verwenden. (PWM für Heizung)
-	TCCR1A = 1<<COM1A1; // clear Output on Compare Match (non-invertig)
-	TCCR1B = 1<<WGM11 | 1<<WGM10 | 1<<CS11 | 1<<CS10; // PhaseCorrectPWM 10 Bit, Prescaler=64
-	OCR1A  = 0; // Lötkolben aus.
+	// Timer/Counter1 im PhaseCorrectPWM Modus verwenden. (Heizung an OC1A)
+	TCCR1A = 1<<COM1A1 | 1<<WGM11 | 1<<WGM10; // PhaseCorrectPWM 10 Bit
+	TCCR1B = 1<<CS11 | 1<<CS10; // Prescaler = 64
+	OCR1A  = 0; // Lötkolben erst mal aus.
 }
 
 
