@@ -1,5 +1,5 @@
 // Initialisierungsfunktionen für die verschiedenen
-// Peripheriekomponenten wie SPI, I2C, SB9, ...
+// Peripheriekomponenten wie SPI, I2C, ADC, SB9, ...
 
 
 //******************************************************

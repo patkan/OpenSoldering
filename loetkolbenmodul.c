@@ -38,7 +38,7 @@ volatile uint16_t spitzentemp = 0, heizstrom = 0, eingangsspannung = 0; // U in 
 volatile uint16_t solltemperatur = 0;
 
 // PD-Reglerparameter (durch Software veränderlich!!)
-volatile float t0 = 1, tn = 1, kp = 1;
+volatile float t = 1, tn = 1, kr = 1; // Zeitkonstante und Reglerverstärkung
 
 ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
@@ -47,16 +47,16 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	
 	// PID Regler muss auch hier drin arbeiten, da er mit gleichem Zeitabstand
 	// ausgeführt wird, wie der ADC. bzw. mit 1/3 der ADC Frequenz.
-	static float  k1 = 0, uk = 0, uk1 = 0; // letzter Reglerausgangswert
-	uint16_t k = spitzentemp;
+	static float  yk = 0, yk1 = 0; // letzter Reglerausgangswert
+	uint16_t ek = spitzentemp, ek1;
 	
 	// Regler (Konzept: PD)
-	uk = kp * (k + (t0 / tn -1)) + uk1;
-	uk1 = uk;
-	k1 = k;
+	yk = yk1 + (kr * (ek - ek1 + (t / tn) * ek1));
+	yk1 = yk;
+	ek1 = ek; // sichere letzten Tempwert
 	
 	// Weitergabe an Ausgabefunktion:
-	setKolbenPower (uk);
+	setKolbenPower (yk);
 }
 
 // ADC Conversion complete Interrupt
