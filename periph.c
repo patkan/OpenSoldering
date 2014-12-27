@@ -25,11 +25,15 @@ void adcInit(void) {
 }
 
 void timerInit(void) {
-	// Timer/Counter1 im CTC modus verwenden. alle 10ms ein Interrupt
-	TCCR1A = 0; // CTC (mode 4)
-	TCCR1B = 1<<WGM12 | 1<<CS11 | 1<<CS10; // CTC (mode 4), Prescaler = 64 -> 4µs pro Timerschritt
-	TIMSK = 1<<OCIE1A; // Interrupt on compare match
-	OCR1A  = 2500; // TOP und Interrupt alle 10ms bei 16MHz clockspeed
+	// Timer/Counter0 kann nur Overflow-Interrupt. daher Prescaler auf 256
+	// heißt: alle 4,08ms kommt ein Interrupt rein.
+	TCCR0 = 1<<CS02; // scale = 256
+	TIMSK |= 1<<TOIE0; // Overflow Interrupt aktiv
+	
+	// Timer/Counter1 im PhaseCorrectPWM Modus verwenden. (PWM für Heizung)
+	TCCR1A = 1<<COM1A1; // clear Output on Compare Match (non-invertig)
+	TCCR1B = 1<<WGM11 | 1<<WGM10 | 1<<CS11 | 1<<CS10; // PhaseCorrectPWM 10 Bit, Prescaler=64
+	OCR1A  = 0; // Lötkolben aus.
 }
 
 

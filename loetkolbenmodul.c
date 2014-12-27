@@ -27,7 +27,7 @@
 #include "definitionen.h"
 
 
-void setKolbenPower (void) {
+void setKolbenPower (float sollwert) {
 	// 16bit Timer1 auf FastPWM, Ausgang OC1A sei Lötkolben.
 }
 
@@ -40,7 +40,7 @@ volatile uint16_t solltemperatur = 0;
 // PD-Reglerparameter (durch Software veränderlich!!)
 volatile float t0 = 1, tn = 1, kp = 1;
 
-ISR (TIMER1_COMPA_vect, ISR_BLOCK) {
+ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
 	ADCSRA |= 1<<ADSC; // start conversion
@@ -51,7 +51,7 @@ ISR (TIMER1_COMPA_vect, ISR_BLOCK) {
 	uint16_t k = spitzentemp;
 	
 	// Regler (Konzept: PD)
-	uk = kp * (k + (t0 / tn -1) + uk1;
+	uk = kp * (k + (t0 / tn -1)) + uk1;
 	uk1 = uk;
 	k1 = k;
 	
