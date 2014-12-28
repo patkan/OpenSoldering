@@ -35,7 +35,7 @@ void setKolbenPower (float sollwert) {
 volatile uint8_t counter = 0; // für Berechnung von Heizleistung und Temperatur des Lötkolbens
 volatile float leistung = 0; // Lötkolbenleistung aktuell
 volatile uint16_t spitzentemp = 0, heizstrom = 0, eingangsspannung = 0; // U in mV, I in mA
-volatile uint16_t solltemperatur = 0;
+volatile uint16_t solltemperatur = 0, platinentemperatur = 0;
 
 // PD-Reglerparameter (durch Software veränderlich!!)
 volatile float t = 1, tn = 1, kr = 1; // Zeitkonstante und Reglerverstärkung
@@ -44,6 +44,16 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
 	ADMUX |= (counter%3); // setze ADC-Kanal neu
 	ADCSRA |= 1<<ADSC; // start conversion
+
+	// Auslesung der Temperatur des LM75-Sensors
+	static uint8_t i2cAuslesung = 0;
+	if (i2cAuslesung == 123) { // es sind ca 500 ms vergangen
+		platinentemperatur = (i2cRxLm75 (0b1001000)) /16; // erst mal in ganzen °C
+		i2cAuslesung = 0;
+	} else {
+		i2cAuslesung++;
+	}
+		
 	
 	// PID Regler muss auch hier drin arbeiten, da er mit gleichem Zeitabstand
 	// ausgeführt wird, wie der ADC. bzw. mit 1/3 der ADC Frequenz.
@@ -85,13 +95,16 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	setKolbenPower (yk);
 }
 
-// ADC Conversion complete Interrupt
+// ADC Conversion Complete Interrupt
 // ADC0 = Temperatur, ADC1 = Heizstrom, ADC2 = Systemspannung
 // Die Werte können noch kalibriert werden, allerdings nicht zur Laufzeit.
 
-#define REFERENZ 4	// externe Referenz, 4096mV also 4mV pro STEP
-#define ABWEICHUNG 1.0  // gemessene Abweichung in % vom exakten Referenzspannungswert
+#define REFERENZ 1			// externe Referenz, 1250mV also 1,2207mV pro STEP
+#define ABWEICHUNG 0.220703125		// gemessene Abweichung in %/100 vom exakten Referenzspannungswert
 #define MITTELWERTE 4
+#define SPANNUNG_PRO_GRAD 1.00000	// Spannung am ADC pro Grad am Lötkolben
+#define SPANNUNG_PRO_AMPERE 0.2		// Spannung am ADC pro Ampere das durch die Heizung fließt
+#define SPANNUNG_PRO_VOLT 0.04347826	// Spannung am ADC pro Volt der Versorgungsspannung
 
 ISR (ADC_vect, ISR_BLOCK) {
 	// 	uartTxStrln("adc");
@@ -104,28 +117,28 @@ ISR (ADC_vect, ISR_BLOCK) {
 	
 	switch (counter%3) {
 		case 0:
-			// spitzentemp wird ausgerechnet
+			// Lötspitzentemperatur wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[0 + 3*i];
 			}
-			spitzentemp = (uint16_t)((temp*REFERENZ)<<2)*ABWEICHUNG;
+			// Achtung: die Lötspitze wird kaltstellenkompensiert (daher die Zusatzvariable)
+			spitzentemp = (uint16_t)((float)((temp*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_GRAD) + platinentemperatur;
 			break;
 			
 		case 1:
-			// heizstrom wird ausgerechnet
+			// Heizstrom wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[1 + 3*i];
 			}
-			heizstrom = (uint16_t)((temp*REFERENZ)<<2)*ABWEICHUNG;
+			heizstrom = (uint16_t)((float)((temp*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_AMPERE);
 			break;
 			
 		case 2:
-			// eingangsspannung wird ausgerechnet
+			// Eingangsspannung wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
 				temp += tabelle[2 + 3*i];
 			}
-			
-			eingangsspannung = (uint16_t)((float)temp*ABWEICHUNG*((float)50/(float)3));
+			eingangsspannung = (uint16_t)((float)temp*ABWEICHUNG*SPANNUNG_PRO_VOLT);
 			break;
 	}
 	counter++;
@@ -170,10 +183,10 @@ int main(void) {
 	
 	while(1) {
 // 		i2cRxLm75Start(0b1001000);
-		temp = i2cRxLm75 (0b1001000);
+// 		temp = i2cRxLm75 (0b1001000);
 // 		writeSegments (i2cERR & 0xF8);
-		writeSegments (temp/16);
-		delayms(500);
+		writeSegments (platinentemperatur);
+		delayms(100);
 	}
 	return 0;
 }
