@@ -47,6 +47,32 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	
 	// PID Regler muss auch hier drin arbeiten, da er mit gleichem Zeitabstand
 	// ausgeführt wird, wie der ADC. bzw. mit 1/3 der ADC Frequenz.
+	
+	/* Erklärung der Ausgangsübertragungsfunktion und der Regelung:
+	* 
+	* yk	= Ausgang (PWM-Wert)
+	* yk1	= vorheriger Ausgangswert
+	* kr	= Reglerverstärkung (P)
+	* ek	= Eingang (Temperatur)
+	* ek1	= vorheriger Eingangswert
+	* t	= Zeitkonstante 1 (vmtl. die der Strecke)
+	* tn	= Reglerzeitkonstante
+	* 
+	* Die Strecke G(s) muss noch ermittelt werden, sie wandelt ein PWM-Signal
+	* in ein Wärmesignal um (Lötkolben incl. MOSFET ist G(s) vmtl. PT1
+	* 
+	* Die Vorsteuerung Gws(s) sorgt dafür, dass die Temperatursprünge, die
+	* auf das Sollsignal gegeben werden, nicht direkt in den Regelkreis
+	* einwirken.
+	*
+	* Der Regler Gr(s) = Kr * (1+ (1 / Tns)) ist ein PI Regler mit der Regler-
+	* verstärkung Kr und der Zeitkonstante Tn. s ist unbekannt.
+	*
+	* Die Störung Z(s) wirkt direkt auf die Temperatur der Lötspitze ein, sie
+	* ist der Wärmestrom von der Lötspitze in die Luft (Standardfall) oder in
+	* die Lötstelle (Regler muss eingreifen)
+	*/
+	
 	static float  yk = 0, yk1 = 0; // letzter Reglerausgangswert
 	uint16_t ek = spitzentemp, ek1;
 	
