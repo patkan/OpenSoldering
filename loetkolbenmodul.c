@@ -1,5 +1,5 @@
 /*
- *    Filename: jbcmodul.c
+ *    Filename: loetkobenmodul.c
  *     Version: 0.0.4
  * Description: Ansteuerung eines JBC T245A Lötkolbens
  *     License: GPLv3 or later
@@ -25,6 +25,7 @@
  */
 
 #include "definitionen.h"
+#include "pid.c"
 
 
 void setKolbenPower (float sollwert) {
@@ -53,13 +54,13 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	} else {
 		i2cAuslesung++;
 	}
-		
-	
+
+
 	// PID Regler muss auch hier drin arbeiten, da er mit gleichem Zeitabstand
 	// ausgeführt wird, wie der ADC. bzw. mit 1/3 der ADC Frequenz.
-	
+
 	/* Erklärung der Ausgangsübertragungsfunktion und der Regelung:
-	* 
+	*
 	* yk	= Ausgang (PWM-Wert)
 	* yk1	= vorheriger Ausgangswert
 	* kr	= Reglerverstärkung (P)
@@ -67,10 +68,10 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	* ek1	= vorheriger Eingangswert
 	* t	= Zeitkonstante 1 (vmtl. die der Strecke)
 	* tn	= Reglerzeitkonstante
-	* 
+	*
 	* Die Strecke G(s) muss noch ermittelt werden, sie wandelt ein PWM-Signal
 	* in ein Wärmesignal um (Lötkolben incl. MOSFET ist G(s) vmtl. PT1
-	* 
+	*
 	* Die Vorsteuerung Gws(s) sorgt dafür, dass die Temperatursprünge, die
 	* auf das Sollsignal gegeben werden, nicht direkt in den Regelkreis
 	* einwirken.
@@ -82,15 +83,23 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	* ist der Wärmestrom von der Lötspitze in die Luft (Standardfall) oder in
 	* die Lötstelle (Regler muss eingreifen)
 	*/
-	
-	static float  yk = 0, yk1 = 0; // letzter Reglerausgangswert
-	uint16_t ek = spitzentemp, ek1;
-	
+
+	// static float  yk = 0, yk1 = 0; // letzter Reglerausgangswert
+	// uint16_t ek = spitzentemp, ek1;
+	//
 	// Regler (Konzept: PD)
-	yk = yk1 + (kr * (ek - ek1 + (t / tn) * ek1));
-	yk1 = yk;
-	ek1 = ek; // sichere letzten Tempwert
-	
+	// yk = yk1 + (kr * (ek - ek1 + (t / tn) * ek1));
+	// yk1 = yk;
+	// ek1 = ek; // sichere letzten Tempwert
+
+
+
+	//das oben ist die alte Implementierung mit Kommentaren, jetzt erstmal eine
+	//neue, dann schauen, ob sich noch etwas recyclen lässt.
+
+	yk = pid_compute(spitzentemp, solltemperatur);
+
+
 	// Weitergabe an Ausgabefunktion:
 	setKolbenPower (yk);
 }
@@ -112,9 +121,9 @@ ISR (ADC_vect, ISR_BLOCK) {
 	static uint16_t tabelle[3*MITTELWERTE]; // hier kommen die ADC-werte rein.
 	uint16_t temp=0;
 	tabelle[counter] = ADC; // fülle Tabelle mit ADC-Werten
-	
+
 // 	TODO: Formeln anpassen!!
-	
+
 	switch (counter%3) {
 		case 0:
 			// Lötspitzentemperatur wird ausgerechnet
@@ -124,7 +133,7 @@ ISR (ADC_vect, ISR_BLOCK) {
 			// Achtung: die Lötspitze wird kaltstellenkompensiert (daher die Zusatzvariable)
 			spitzentemp = (uint16_t)((float)((temp*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_GRAD) + platinentemperatur;
 			break;
-			
+
 		case 1:
 			// Heizstrom wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
@@ -132,7 +141,7 @@ ISR (ADC_vect, ISR_BLOCK) {
 			}
 			heizstrom = (uint16_t)((float)((temp*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_AMPERE);
 			break;
-			
+
 		case 2:
 			// Eingangsspannung wird ausgerechnet
 			for(uint8_t i=0; i<MITTELWERTE; i++) {
@@ -151,36 +160,36 @@ ISR (ADC_vect, ISR_BLOCK) {
 
 
 int main(void) {
-	
+
 	// Allgemeine PIN- und PORT-Einstellungen
 	DDRB = 1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3 | 1<<PB5;
 	DDRD = 1<<PD1 | 1<<PD4 | 1<<PD5; // PD4 ist WS2812B Datenpin
 	PORTC = 1<<PC3; // Pullup für Lötkolbenständerschalter
 	PORTD = 1<<PD3; // Lötspitzenwechslerschalter
-	
+
 	delayms(100);
-	
+
 	spiInit();
 	i2cInit();
 	lm75Init();
 // 	timerInit();
 // 	uartInit();
 	writeSegments(42);
-	
+
 	// Initialiserung der WS2812-StatusLED
 	struct cRGB led[1];
 	led[0].g=128;
 	led[0].b=75;
 	led[0].b=25;
 	ws2812_setleds(led,1);
-	
+
 // 	sei(); // und es seien Interrupts :D
-	
+
 	uint16_t temp = 0;
-	
+
 	delayus(10);
 	i2cRxLm75Start(0b1001000);
-	
+
 	while(1) {
 // 		i2cRxLm75Start(0b1001000);
 // 		temp = i2cRxLm75 (0b1001000);
