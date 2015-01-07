@@ -97,6 +97,7 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	//das oben ist die alte Implementierung mit Kommentaren, jetzt erstmal eine
 	//neue, dann schauen, ob sich noch etwas recyclen lässt.
 
+	float yk;
 	yk = pid_compute(spitzentemp, solltemperatur);
 
 
