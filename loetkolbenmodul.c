@@ -78,19 +78,6 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	*/
 
 
-	// static float  yk = 0, yk1 = 0; // letzter Reglerausgangswert
-	// uint16_t ek = spitzentemp, ek1;
-	//
-	// Regler (Konzept: PD)
-	// yk = yk1 + (kr * (ek - ek1 + (t / tn) * ek1));
-	// yk1 = yk;
-	// ek1 = ek; // sichere letzten Tempwert
-
-
-
-	//das oben ist die alte Implementierung mit Kommentaren, jetzt erstmal eine
-	//neue, dann schauen, ob sich noch etwas recyclen lässt.
-
 	//TODO: dies ist der neue Aufruf für die externe PID-Funktion
 	//float yk;
 	//yk = pid_compute(spitzentemp, solltemperatur);
