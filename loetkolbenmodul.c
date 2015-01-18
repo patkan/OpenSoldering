@@ -26,6 +26,7 @@
 
 #include "definitionen.h"
 #include "pid.c"
+extern volatile float kp, ki, kd; //TODO --> das hier soll noch weg
 
 
 void setKolbenPower (float sollwert) {
@@ -38,7 +39,7 @@ volatile float leistung = 0, rawtemp = 0, spitzentemp = 0;
 volatile uint16_t heizstrom = 0, eingangsspannung = 0; // U in mV, I in mA
 volatile uint16_t solltemperatur = 0, platinentemperatur = 0;
 
-volatile float ki = 1, kp = 1;
+//volatile float ki = 1, kp = 1, kd = 1; // werden bereits in pid.c deklariert --> Zugriff sollte am besten nur über setTunings erfolgen
 
 ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits

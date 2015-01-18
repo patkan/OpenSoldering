@@ -36,7 +36,7 @@
 
   /*working variables*/
   double ITerm, lastInput;
-  double kp, ki, kd;
+  volatile float kp, ki, kd; //diese Variablen werden in loetkolbenmodul.c auch gebraucht --> TODO so anpassen, dass nur noch die Funktionen zur Anpassung genommen werden
   int SampleTime = 1000; //1 sec
 
   float output = 0;
