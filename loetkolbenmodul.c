@@ -34,12 +34,11 @@ void setKolbenPower (float sollwert) {
 
 // Der ADC wird interruptgesteuert
 volatile uint8_t counter = 0; // für Berechnung von Heizleistung und Temperatur des Lötkolbens
-volatile float leistung = 0; // Lötkolbenleistung aktuell
-volatile uint16_t spitzentemp = 0, heizstrom = 0, eingangsspannung = 0; // U in mV, I in mA
+volatile float leistung = 0, rawtemp = 0, spitzentemp = 0;
+volatile uint16_t heizstrom = 0, eingangsspannung = 0; // U in mV, I in mA
 volatile uint16_t solltemperatur = 0, platinentemperatur = 0;
 
-// PD-Reglerparameter (durch Software veränderlich!!)
-volatile float t = 1, tn = 1, kr = 1; // Zeitkonstante und Reglerverstärkung
+volatile float ki = 1, kp = 1;
 
 ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	ADMUX = ADMUX & 0b11100000; // lösche selektiv die MUX-Bits
@@ -60,29 +59,23 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	// ausgeführt wird, wie der ADC. bzw. mit 1/3 der ADC Frequenz.
 
 	/* Erklärung der Ausgangsübertragungsfunktion und der Regelung:
-	*
-	* yk	= Ausgang (PWM-Wert)
-	* yk1	= vorheriger Ausgangswert
-	* kr	= Reglerverstärkung (P)
-	* ek	= Eingang (Temperatur)
-	* ek1	= vorheriger Eingangswert
-	* t	= Zeitkonstante 1 (vmtl. die der Strecke)
-	* tn	= Reglerzeitkonstante
-	*
-	* Die Strecke G(s) muss noch ermittelt werden, sie wandelt ein PWM-Signal
-	* in ein Wärmesignal um (Lötkolben incl. MOSFET ist G(s) vmtl. PT1
-	*
-	* Die Vorsteuerung Gws(s) sorgt dafür, dass die Temperatursprünge, die
-	* auf das Sollsignal gegeben werden, nicht direkt in den Regelkreis
-	* einwirken.
-	*
-	* Der Regler Gr(s) = Kr * (1+ (1 / Tns)) ist ein PI Regler mit der Regler-
-	* verstärkung Kr und der Zeitkonstante Tn. s ist unbekannt.
+	
+
+	* 
+	* yk	= Ausgangswert des Integrators
+	* ek	= Differenz der Temperatur vom Sollwert (+ => zu kalt)
+	* ki	= I-Verstärungswert
+	* kr	= Reglerverstärkung
+	* 
+	* Eine Vorsteuerung hat wegen der stark wechselnden Lastsituationen
+	* keinen großen Sinn und wird daher weggelassen.
+
 	*
 	* Die Störung Z(s) wirkt direkt auf die Temperatur der Lötspitze ein, sie
 	* ist der Wärmestrom von der Lötspitze in die Luft (Standardfall) oder in
 	* die Lötstelle (Regler muss eingreifen)
 	*/
+
 
 	// static float  yk = 0, yk1 = 0; // letzter Reglerausgangswert
 	// uint16_t ek = spitzentemp, ek1;
@@ -97,12 +90,21 @@ ISR (TIMER0_OVF_vect, ISR_BLOCK) {
 	//das oben ist die alte Implementierung mit Kommentaren, jetzt erstmal eine
 	//neue, dann schauen, ob sich noch etwas recyclen lässt.
 
-	float yk;
-	yk = pid_compute(spitzentemp, solltemperatur);
+	//TODO: dies ist der neue Aufruf für die externe PID-Funktion
+	//float yk;
+	//yk = pid_compute(spitzentemp, solltemperatur);
 
+
+
+	
+	// Regler (Konzept: PI)
+	float ek = solltemperatur - rawtemp;
+	static float yk;
+	yk += (ki * ek);
+	
 
 	// Weitergabe an Ausgabefunktion:
-	setKolbenPower (yk);
+	setKolbenPower (yk + (kp * ek));
 }
 
 // ADC Conversion Complete Interrupt
@@ -127,12 +129,9 @@ ISR (ADC_vect, ISR_BLOCK) {
 
 	switch (counter%3) {
 		case 0:
-			// Lötspitzentemperatur wird ausgerechnet
-			for(uint8_t i=0; i<MITTELWERTE; i++) {
-				temp += tabelle[0 + 3*i];
-			}
 			// Achtung: die Lötspitze wird kaltstellenkompensiert (daher die Zusatzvariable)
-			spitzentemp = (uint16_t)((float)((temp*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_GRAD) + platinentemperatur;
+			spitzentemp = spitzentemp*0.95 + (((float)((temp*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_GRAD) + platinentemperatur)*0.05;
+			rawtemp = ((float)((tabelle[counter]*REFERENZ)<<2)*ABWEICHUNG*SPANNUNG_PRO_GRAD) + platinentemperatur;
 			break;
 
 		case 1:
@@ -186,7 +185,6 @@ int main(void) {
 
 // 	sei(); // und es seien Interrupts :D
 
-	uint16_t temp = 0;
 
 	delayus(10);
 	i2cRxLm75Start(0b1001000);
